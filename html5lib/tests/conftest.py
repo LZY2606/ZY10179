@@ -1,8 +1,8 @@
 from __future__ import print_function
 import os.path
 import sys
+import warnings
 
-import pkg_resources
 import pytest
 
 from .tree_construction import TreeConstructionFile
@@ -34,6 +34,29 @@ def fail_if_missing_pytest_expect():
         raise
 
 
+def _requirement_status(spec, marker=None):
+    """Return an error message for an unsatisfied requirement line.
+
+    pkg_resources is only available on older setuptools releases; the
+    optional-dependency check is itself optional (it backs --update-xfail),
+    so import it lazily and skip the check when it is unavailable.
+    """
+    try:
+        import pkg_resources
+    except ImportError:
+        return None
+    if marker and not pkg_resources.evaluate_marker(marker):
+        return "%s not available in this environment" % spec
+    req = pkg_resources.Requirement.parse(spec)
+    try:
+        installed = pkg_resources.working_set.find(req)
+    except pkg_resources.VersionConflict:
+        return "Outdated version of %s installed, need %s" % (req.name, spec)
+    if not installed:
+        return "Need %s" % spec
+    return None
+
+
 fail_if_missing_pytest_expect()
 
 
@@ -48,7 +71,13 @@ def pytest_configure(config):
         else:
             msg += ("The testdata doesn't appear to be included with this package, " +
                     "so finding the right version will be hard. :(")
-        msgs.append(msg)
+        if config.option.update_xfail:
+            msgs.append(msg)
+        else:
+            # The data-driven tests under testdata/ simply collect nothing;
+            # the rest of the suite (including the parser witnesses) is
+            # self-contained and must still run.
+            warnings.warn(msg + " Data-driven tests will be skipped.")
 
     if config.option.update_xfail:
         # Check for optional requirements
@@ -63,17 +92,9 @@ def pytest_configure(config):
                             spec, marker = line.strip().split(";", 1)
                         else:
                             spec, marker = line.strip(), None
-                        req = pkg_resources.Requirement.parse(spec)
-                        if marker and not pkg_resources.evaluate_marker(marker):
-                            msgs.append("%s not available in this environment" % spec)
-                        else:
-                            try:
-                                installed = pkg_resources.working_set.find(req)
-                            except pkg_resources.VersionConflict:
-                                msgs.append("Outdated version of %s installed, need %s" % (req.name, spec))
-                            else:
-                                if not installed:
-                                    msgs.append("Need %s" % spec)
+                        message = _requirement_status(spec, marker)
+                        if message:
+                            msgs.append(message)
 
         # Check cElementTree
         import xml.etree.ElementTree as ElementTree

@@ -6,9 +6,14 @@ import sys
 
 from os.path import join, dirname
 from setuptools import setup, find_packages, __version__ as setuptools_version
-from pkg_resources import parse_version
 
-import pkg_resources
+try:
+    from pkg_resources import parse_version
+    import pkg_resources
+except ImportError:
+    # pkg_resources was removed from setuptools 81; the workaround below
+    # only applies to setuptools < 18.5, so it is safe to skip entirely.
+    pkg_resources = None
 
 try:
     import _markerlib.markers
