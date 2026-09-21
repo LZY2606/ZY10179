@@ -21,6 +21,17 @@ Bug fixes:
 * The sanitizer now permits ``<summary>`` tags. It used to allow ``<details>``
   already. (#423)
 
+Testing:
+
+* Add self-contained parser witnesses (``test_parser_witnesses.py``)
+  recording phase switches, the open element stack, the active formatting
+  element list and the form pointer, foster parenting and the adoption agency
+  algorithm.  Trees from the etree, dom and (when available) lxml builders
+  are compared through a canonical structure model instead of serialised
+  HTML, and chunked feeds verify that tokenizer chunk boundaries are
+  invisible.  The test session no longer aborts when the testdata submodule
+  is unavailable; data-driven tests simply do not collect.
+
 1.1
 ~~~
 

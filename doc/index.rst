@@ -8,6 +8,7 @@ Overview
    :maxdepth: 2
 
    movingparts
+   parsing-witnesses
    modules
    changes
    License <license>
@@ -19,4 +20,3 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-
